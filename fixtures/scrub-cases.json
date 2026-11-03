@@ -1,0 +1,132 @@
+[
+  {
+    "name": "drizzle query cut at params",
+    "input": "Failed query: select \"id\" from \"envios\" where \"email\" = $1 and \"monto\" > $2\nparams: ana@example.com,15000",
+    "expected": "Failed query: select \"…\" from \"…\" where \"…\" = $1 and \"…\" > $2"
+  },
+  {
+    "name": "sql placeholders stay readable",
+    "input": "Failed query: insert into envios (a, b, c) values ($1, $2, $12) returning id",
+    "expected": "Failed query: insert into envios (a, b, c) values ($1, $2, $12) returning id"
+  },
+  {
+    "name": "three-digit placeholder is masked",
+    "input": "values ($99, $100)",
+    "expected": "values ($99, $#)"
+  },
+  {
+    "name": "email",
+    "input": "No user for juan.perez@example.com in this app",
+    "expected": "No user for …@… in this app"
+  },
+  {
+    "name": "double-quoted text",
+    "input": "duplicate key value violates unique constraint \"envios_pkey\"",
+    "expected": "duplicate key value violates unique constraint \"…\""
+  },
+  {
+    "name": "single-quoted text with an escaped quote",
+    "input": "Unexpected token 'O\\'Brien' in input",
+    "expected": "Unexpected token \"…\" in input"
+  },
+  {
+    "name": "json object",
+    "input": "Invalid body {\"cuit\":\"20-12345678-9\",\"total\":1500}",
+    "expected": "Invalid body {…}"
+  },
+  {
+    "name": "plain numbers",
+    "input": "Expected 3 items, got 42 at offset -7",
+    "expected": "Expected # items, got # at offset #"
+  },
+  {
+    "name": "decimal and thousands separators",
+    "input": "Total 1.500,25 does not match 1,500.25",
+    "expected": "Total # does not match #"
+  },
+  {
+    "name": "amount without space",
+    "input": "Payment of $15000 exceeds the limit",
+    "expected": "Payment of $# exceeds the limit"
+  },
+  {
+    "name": "amount with space and separators",
+    "input": "Saldo insuficiente: $ 1.500,00 pendiente",
+    "expected": "Saldo insuficiente: $# pendiente"
+  },
+  {
+    "name": "amount with currency code",
+    "input": "Charged US$ 20 to the card",
+    "expected": "Charged $# to the card"
+  },
+  {
+    "name": "amount formatted by Intl (no-break space)",
+    "input": "Monto $ 1.500,00 fuera de rango",
+    "expected": "Monto $# fuera de rango"
+  },
+  {
+    "name": "amount with code and no space",
+    "input": "Fee AR$1500 is over the cap",
+    "expected": "Fee $# is over the cap"
+  },
+  {
+    "name": "two-digit amount with a separator",
+    "input": "Price $12.50 was rounded",
+    "expected": "Price $# was rounded"
+  },
+  {
+    "name": "small amount reads as a placeholder",
+    "input": "Limit $50 reached",
+    "expected": "Limit $50 reached"
+  },
+  {
+    "name": "long digit run inside a word",
+    "input": "No invoice INV0012345678 for user u123456",
+    "expected": "No invoice INV# for user u#"
+  },
+  {
+    "name": "short digits inside a word stay",
+    "input": "Column c2 of table t1 is missing",
+    "expected": "Column c2 of table t1 is missing"
+  },
+  {
+    "name": "trailing punctuation stays",
+    "input": "Retry 3 failed.",
+    "expected": "Retry # failed."
+  },
+  {
+    "name": "whitespace collapses",
+    "input": "  line one\n\n   line two\t\tend  ",
+    "expected": "line one line two end"
+  },
+  {
+    "name": "iso timestamp",
+    "input": "Expired at 2026-11-03T18:04:05.123Z",
+    "expected": "Expired at #-#-#T18:#:#Z"
+  },
+  {
+    "name": "empty message",
+    "input": "",
+    "expected": ""
+  },
+  {
+    "name": "non-ascii text",
+    "input": "Envío 42 rechazado: “Pérez” no tiene CBU",
+    "expected": "Envío # rechazado: \"…\" no tiene CBU"
+  },
+  {
+    "name": "digits after a non-ASCII letter are masked",
+    "input": "Fila año2026 y paí5",
+    "expected": "Fila año2026 y paí#"
+  },
+  {
+    "name": "typographic quotes",
+    "input": "No se encontró “Juan Pérez” en la planilla",
+    "expected": "No se encontró \"…\" en la planilla"
+  },
+  {
+    "name": "long message is cut at 500 code points",
+    "input": "Error 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 ",
+    "expected": "Error 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 🏀 "
+  }
+]
