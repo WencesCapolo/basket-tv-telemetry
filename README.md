@@ -46,6 +46,7 @@ await runLogged(startEvent('job', { route: 'sync_contacts' }), () => syncContact
 
 ```ts
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { routePath } from 'hono/route';
 import { wideEvent } from 'basket-tv-telemetry/hono';
 import { telemetry } from './lib/telemetry';
@@ -53,6 +54,7 @@ import { telemetry } from './lib/telemetry';
 const app = new Hono();
 app.use('*', wideEvent()); // first; logs /api/* except /api/health. wideEvent((path) => …) to choose.
 app.onError((err, c) => {
+  if (err instanceof HTTPException && err.status < 500) return err.getResponse(); // a 4xx is not a server error
   telemetry.reportServerError(err, { route: routePath(c), status: 500 });
   return c.json({ error: 'internal' }, 500);
 });
@@ -95,11 +97,13 @@ export function onRequestError(err: unknown, request: { method: string }, contex
 }
 ```
 
+Next must bundle this entry point: keep `basket-tv-telemetry` out of `serverExternalPackages`, because it imports `next/headers` and `next/navigation`.
+
 `redirect()`, `notFound()` and Next's other control-flow throws pass through the wrappers as `outcome: "ok"` without a status. Page renders get no line.
 
 ## Shutdown
 
-`installShutdownFlush(reporter)` flushes on SIGINT / SIGTERM, then exits with the signal's code (130 / 143). If the app already handles those signals, call `await telemetry.flush()` in its handler instead.
+`installShutdownFlush(reporter)` flushes on SIGINT / SIGTERM, then exits with the signal's code (130 / 143). When the app has its own handler for the signal, it only flushes and leaves the exit to the app, so a server close or a queue drain is not cut short; that handler can also `await telemetry.flush()` before it exits. Without a token it installs nothing.
 
 - **pm2**: set `kill_timeout` to at least `3000` so pm2 does not SIGKILL the process mid-flush.
 - **`next start`**: Next installs its own signal handler, so the flush is best effort unless the process runs with `NEXT_MANUAL_SIG_HANDLE=true`.

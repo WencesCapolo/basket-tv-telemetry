@@ -9,14 +9,14 @@ declare module 'hono' {
 }
 
 /** Only the API is logged: not the health check, static assets or the SPA fallback. */
-export const apiOnly = (path: string): boolean => path === '/api/health' || !path.startsWith('/api/');
+export const defaultSkip = (path: string): boolean => path === '/api/health' || !path.startsWith('/api/');
 
 /**
  * One wide event per request. Register it before every other middleware and
  * route: `app.use('*', wideEvent())`. Handlers add fields through `c.get('wide')`
  * or `addFields`.
  */
-export function wideEvent(skip: (path: string) => boolean = apiOnly): MiddlewareHandler {
+export function wideEvent(skip: (path: string) => boolean = defaultSkip): MiddlewareHandler {
   return async (c, next) => {
     const t0 = performance.now();
     const id = requestId(c.req.header('x-request-id'));

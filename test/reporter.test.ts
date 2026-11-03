@@ -83,6 +83,17 @@ describe('createReporter', () => {
     await first;
   });
 
+  it('drops an event with an empty name instead of losing the whole batch', async () => {
+    const { url, received } = await ingest();
+    const reporter = createReporter({ app: 'a', ingestUrl: url, token: 'secret-token-123456' });
+    reporter.trackServerEvent('', 'u1');
+    reporter.trackServerEvent('kept', 'u'.repeat(300));
+    reporter.reportServerError(new Error('boom'));
+    await reporter.flush();
+    expect(received[0]!.batch.events).toMatchObject([{ name: 'kept', userId: 'u'.repeat(200) }]);
+    expect(received[0]!.batch.errors).toHaveLength(1);
+  });
+
   it('keeps at most 200 items and splits batches at the ingest limit of 100 errors', async () => {
     const { url, received } = await ingest();
     const reporter = createReporter({ app: 'a', ingestUrl: url, token: 'secret-token-123456' });

@@ -43,6 +43,9 @@ export declare const requestIdOf: (err: unknown) => string | undefined;
 export declare function finish(event: WideEvent, startedAt: number, status?: number): void;
 /** A job run or a worker message: `await runLogged(startEvent('job', { route: 'sync_contacts' }), () => sync())`. */
 export declare function runLogged<T>(event: WideEvent, fn: () => Promise<T>): Promise<T>;
-/** A failure that repeats (a retry loop): emit it once, then at most once per `everyMs` with `repeats` = lines skipped. */
+/**
+ * A failure that repeats (a retry loop): emit it once, then at most once per `everyMs`
+ * with `repeats` = lines skipped, when any were.
+ */
 export declare function emitThrottled(key: string, event: WideEvent, everyMs?: number): void;
 export {};

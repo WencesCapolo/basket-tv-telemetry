@@ -6,7 +6,7 @@ declare module 'hono' {
     }
 }
 /** Only the API is logged: not the health check, static assets or the SPA fallback. */
-export declare const apiOnly: (path: string) => boolean;
+export declare const defaultSkip: (path: string) => boolean;
 /**
  * One wide event per request. Register it before every other middleware and
  * route: `app.use('*', wideEvent())`. Handlers add fields through `c.get('wide')`

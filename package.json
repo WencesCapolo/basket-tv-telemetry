@@ -5,6 +5,8 @@
   "description": "Shared server telemetry for the Basket.tv apps: error reporter, scrubbing and one JSON wide event per request.",
   "type": "module",
   "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -21,6 +23,19 @@
     "./next": {
       "types": "./dist/next.d.ts",
       "default": "./dist/next.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "log": [
+        "dist/log.d.ts"
+      ],
+      "hono": [
+        "dist/hono.d.ts"
+      ],
+      "next": [
+        "dist/next.d.ts"
+      ]
     }
   },
   "files": [

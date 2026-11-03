@@ -81,14 +81,26 @@ export async function runLogged(event, fn) {
         finish(event, t0);
     }
 }
+const MAX_THROTTLED_KEYS = 1_000;
 const seen = new Map();
-/** A failure that repeats (a retry loop): emit it once, then at most once per `everyMs` with `repeats` = lines skipped. */
+/**
+ * A failure that repeats (a retry loop): emit it once, then at most once per `everyMs`
+ * with `repeats` = lines skipped, when any were.
+ */
 export function emitThrottled(key, event, everyMs = 5 * 60_000) {
+    const now = Date.now();
     const last = seen.get(key);
-    if (last && Date.now() - last.at < everyMs) {
+    if (last && now - last.at < everyMs) {
         last.repeats += 1;
         return;
     }
-    seen.set(key, { at: Date.now(), repeats: 0 });
-    emit(last ? { ...event, repeats: last.repeats } : event);
+    seen.delete(key);
+    // Expired keys with no skipped lines have nothing left to report; past the cap the oldest go.
+    for (const [k, entry] of seen) {
+        if (seen.size < MAX_THROTTLED_KEYS && (entry.repeats > 0 || now - entry.at < everyMs))
+            continue;
+        seen.delete(k);
+    }
+    seen.set(key, { at: now, repeats: 0 });
+    emit(last && last.repeats > 0 ? { ...event, repeats: last.repeats } : event);
 }

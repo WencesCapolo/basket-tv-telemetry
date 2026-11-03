@@ -35,17 +35,21 @@ export function scrubStack(err) {
     return [`${errorType(err)}: ${scrubMessage(err.message)}`, ...frames].join('\n').slice(0, MAX_STACK);
 }
 const errorType = (err) => (err.name || 'Error').slice(0, MAX_TYPE);
-function safeString(value) {
+/**
+ * `{ type, message }` of anything thrown. A non-Error is `NonError` with its string form as the message.
+ * Never throws: it runs in the wrappers' catch, where a throw would replace the original error.
+ */
+export function describeError(err) {
+    const isError = err instanceof Error;
+    let type = isError ? 'Error' : 'NonError';
+    let message = '';
     try {
-        return String(value);
+        if (isError)
+            type = errorType(err);
+        message = scrubMessage(String(isError ? err.message : err));
     }
     catch {
-        return '';
+        // a throwing getter or toString: keep what was read
     }
-}
-/** `{ type, message }` of anything thrown. A non-Error is `NonError` with its string form as the message. */
-export function describeError(err) {
-    return err instanceof Error
-        ? { type: errorType(err), message: scrubMessage(safeString(err.message)) }
-        : { type: 'NonError', message: scrubMessage(safeString(err)) };
+    return { type, message };
 }

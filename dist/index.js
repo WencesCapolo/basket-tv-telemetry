@@ -99,7 +99,10 @@ export function createReporter(options) {
             });
         },
         trackServerEvent(name, userId, props = {}) {
-            enqueue(() => ({ events: { name: name.slice(0, 200), ts: Date.now(), userId, props } }));
+            // The ingest refuses a whole batch, errors included, over one empty name.
+            if (!name)
+                return;
+            enqueue(() => ({ events: { name: name.slice(0, 200), ts: Date.now(), userId: userId?.slice(0, 200) ?? null, props } }));
         },
         async flush() {
             await Promise.all([...inFlight, send()]);
@@ -134,15 +137,21 @@ function batches(queued) {
 const installed = new WeakSet();
 /**
  * On SIGINT or SIGTERM, flush, then exit with the code the signal would have
- * given (130, 143). A second signal exits at once.
+ * given (130, 143); a second signal exits at once. When the app listens to the
+ * signal too, it only flushes: exiting would cut the app's own shutdown short.
+ * Without a token there is nothing to flush, so nothing is installed.
  */
 export function installShutdownFlush(reporter) {
-    if (installed.has(reporter))
+    if (reporter === NOOP || installed.has(reporter))
         return;
     installed.add(reporter);
     let stopping = false;
     const onSignal = (signal) => {
         const code = signal === 'SIGINT' ? 130 : 143;
+        if (process.listenerCount(signal) > 1) {
+            void reporter.flush();
+            return;
+        }
         if (stopping)
             process.exit(code);
         stopping = true;
