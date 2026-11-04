@@ -25,7 +25,7 @@ telemetry.reportServerError(err, { route: '/api/orders/:id', status: 500, userId
 telemetry.trackServerEvent('order_submitted', userId, { order_id: 42 });
 ```
 
-- `reportServerError(err, context)`: context keys are snake_case except `userId`. Inside a wide event, `request_id`, `method`, `route`, `status` and `userId` are filled from it when the context leaves them out. A thrown non-Error is sent as `type: "NonError"` with its string form as the message and no stack.
+- `reportServerError(err, context)`: context keys are snake_case except `userId`. When the error has an `Error` `cause`, the message ends with `\ncaused by <type>: <message>`, scrubbed. Inside a wide event, `request_id`, `method`, `route`, `status` and `userId` are filled from it when the context leaves them out. A thrown non-Error is sent as `type: "NonError"` with its string form as the message and no stack.
 - Batches for 1 s; keeps at most 200 items and drops the rest while the ingest is down; each POST gives up after 1.5 s; never throws into the caller.
 - `flush()` waits for the POST in flight and sends what is queued.
 - `scrubMessage` / `scrubStack`: the message without data (cut at `params:`; emails, quoted text, `{…}` objects, numbers, long digit runs and amounts masked; SQL placeholders `$1`…`$99` kept).
@@ -33,6 +33,8 @@ telemetry.trackServerEvent('order_submitted', userId, { order_id: 42 });
 ## `basket-tv-telemetry/log`: wide events
 
 One JSON line per unit of work on stdout, in the format the logs collector parses. `startEvent`, `withEvent`, `addFields`, `markError`, `finish`, `emit`, `emitThrottled`, `requestId`, `currentRequestId`, `requestIdOf`, `runLogged`.
+
+A line outside any unit of work (a page loader, an email send, a crash) is `kind: "job"` with `route` = its source (`mailer`, `uncaught`). `markError` writes `error: { type, message }`, plus `cause: { type, message }` (one level) when the error has an `Error` `cause`, all scrubbed.
 
 ```ts
 import { addFields, emit, runLogged, startEvent } from 'basket-tv-telemetry/log';
@@ -89,13 +91,18 @@ export const createOrder = withActionLog('createOrder', async (input: CreateOrde
 
 ```ts
 // src/instrumentation.ts
-import { requestIdOf } from 'basket-tv-telemetry/log';
-import { telemetry } from './lib/telemetry';
+export async function register() {
+  if (process.env.NEXT_RUNTIME === 'nodejs') await import('./lib/telemetry');
+}
 
-export function onRequestError(err: unknown, request: { method: string }, context: { routePath: string; routeType: string }) {
+export async function onRequestError(err: unknown, request: { method: string }, context: { routePath: string; routeType: string }) {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return;
+  const [{ requestIdOf }, { telemetry }] = await Promise.all([import('basket-tv-telemetry/log'), import('./lib/telemetry')]);
   telemetry.reportServerError(err, { method: request.method, route: context.routePath, route_type: context.routeType, request_id: requestIdOf(err) });
 }
 ```
+
+**Never import this package statically from `instrumentation.ts`, `middleware.ts` / `proxy.ts`, or anything they import.** A `middleware.ts` runs on the edge runtime, and Next bundles `instrumentation.ts` into it too: a Node-only module there can fail every request in production while `next build` passes. Smoke-test each app in CI with `next build && next start` and a `curl` of a page and an API route.
 
 Next must bundle this entry point: keep `basket-tv-telemetry` out of `serverExternalPackages`, because it imports `next/headers` and `next/navigation`.
 
@@ -119,4 +126,6 @@ A port (the Python reporter) must pass `fixtures/scrub-cases.json` (input → ex
 
 ## Upgrading
 
-Bump the tag in each app's `package.json` and reinstall. Changes land here with `pnpm build` and the rebuilt `dist/` in the same commit; CI fails if they differ.
+Bump the tag in each app's `package.json` and reinstall.
+
+Changes land here with `pnpm build` and the rebuilt `dist/` in the same commit; CI fails if they differ.
