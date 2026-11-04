@@ -61,6 +61,18 @@ describe('createReporter', () => {
     expect(errors[0]!.stack).not.toContain('example.com');
   });
 
+  it('appends the scrubbed cause to the message, never the SQL values or params', async () => {
+    const { url, errors } = await ingest();
+    const reporter = createReporter({ app: 'a', ingestUrl: url, token: 'secret-token-123456' });
+    const cause = new Error('connect ECONNREFUSED 10.0.0.5:5432');
+    reporter.reportServerError(new Error('Failed query: select "id" from "users" where "email" = $1\nparams: ana@example.com,15000', { cause }));
+    await reporter.flush();
+    const [sent] = errors();
+    expect(sent!.message).toBe('Failed query: select "…" from "…" where "…" = $1\ncaused by Error: connect ECONNREFUSED #:#');
+    expect(sent!.stack).toMatch(/^Error: Failed query: select "…" from "…" where "…" = \$1\n\s+at /);
+    expect(JSON.stringify(sent)).not.toMatch(/example\.com|15000|users|params|10\.0\.0\.5/);
+  });
+
   it('reports a non-Error throw as NonError with its scrubbed string and no stack', async () => {
     const { url, errors } = await ingest();
     const reporter = createReporter({ app: 'a', ingestUrl: url, token: 'secret-token-123456' });

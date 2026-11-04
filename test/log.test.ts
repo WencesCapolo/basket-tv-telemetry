@@ -18,12 +18,31 @@ describe('requestId', () => {
 describe('markError', () => {
   it('never throws on an error whose getters throw, so the wrappers rethrow the original', () => {
     const hostile = new Error('x');
-    for (const key of ['message', 'name']) {
+    for (const key of ['message', 'name', 'cause']) {
       Object.defineProperty(hostile, key, { get: () => { throw new Error('getter'); } });
     }
     const event = startEvent('request');
     expect(() => markError(hostile, event)).not.toThrow();
     expect(event.error).toEqual({ type: 'Error', message: '' });
+  });
+
+  it('adds an Error cause, scrubbed and one level deep, and never the SQL values or params', () => {
+    const connection = new Error('connect ECONNREFUSED 10.0.0.5:5432', { cause: new Error('inner ana@example.com') });
+    const query = new Error('Failed query: select "id" from "users" where "email" = $1\nparams: ana@example.com,15000', { cause: connection });
+    const event = startEvent('job', { route: 'mailer' });
+    markError(query, event);
+    expect(event.error).toEqual({
+      type: 'Error',
+      message: 'Failed query: select "…" from "…" where "…" = $1',
+      cause: { type: 'Error', message: 'connect ECONNREFUSED #:#' },
+    });
+
+    markError(new Error('Could not send the receipt', { cause: query }), event);
+    expect(event.error?.cause).toEqual({ type: 'Error', message: 'Failed query: select "…" from "…" where "…" = $1' });
+    expect(JSON.stringify(event.error)).not.toMatch(/example\.com|15000|users|params/);
+
+    markError(new Error('x', { cause: 'not an error' }), event);
+    expect(event.error).toEqual({ type: 'Error', message: 'x' });
   });
 });
 

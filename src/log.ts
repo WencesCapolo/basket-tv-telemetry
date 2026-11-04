@@ -4,7 +4,7 @@
 // node:async_hooks is also in the edge runtime; node:crypto is not, and a stray
 // import of this module from edge code must still load (globalThis.crypto instead).
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { describeError } from './scrub.js';
+import { describeError, type ErrorDescription } from './scrub.js';
 
 type Scalar = string | number | boolean | null;
 /** One domain thing the unit touched: ids, counts, enums, booleans. Never emails, names, free text or amounts. */
@@ -23,10 +23,10 @@ export interface WideEvent {
   reason?: string;
   user_id?: string;
   role?: string;
-  error?: { type: string; message: string };
+  error?: ErrorDescription;
   sample_rate?: number;
   repeats?: number;
-  [key: string]: Scalar | Fields | undefined;
+  [key: string]: Scalar | Fields | ErrorDescription | undefined;
 }
 
 const MAX_BYTES = 8 * 1024;
@@ -75,7 +75,7 @@ export function addFields(fields: Partial<WideEvent>): void {
 
 export const currentRequestId = (): string | undefined => als.getStore()?.request_id;
 
-/** Mark the event as failed with the error's type and scrubbed message (no stack), and tag the error with the event. */
+/** Mark the event as failed with the error's type, scrubbed message and cause (no stack), and tag the error with the event. */
 export function markError(err: unknown, event = als.getStore()): void {
   if (!event) return;
   event.level = 'error';

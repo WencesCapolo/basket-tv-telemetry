@@ -44,7 +44,7 @@ export function addFields(fields) {
         Object.assign(event, fields);
 }
 export const currentRequestId = () => als.getStore()?.request_id;
-/** Mark the event as failed with the error's type and scrubbed message (no stack), and tag the error with the event. */
+/** Mark the event as failed with the error's type, scrubbed message and cause (no stack), and tag the error with the event. */
 export function markError(err, event = als.getStore()) {
     if (!event)
         return;

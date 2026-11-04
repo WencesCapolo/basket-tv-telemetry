@@ -36,10 +36,23 @@ export function scrubStack(err) {
 }
 const errorType = (err) => (err.name || 'Error').slice(0, MAX_TYPE);
 /**
- * `{ type, message }` of anything thrown. A non-Error is `NonError` with its string form as the message.
+ * `{ type, message, cause? }` of anything thrown. A non-Error is `NonError` with its string form as the message.
  * Never throws: it runs in the wrappers' catch, where a throw would replace the original error.
  */
 export function describeError(err) {
+    const described = describeOne(err);
+    if (!(err instanceof Error))
+        return described;
+    let cause;
+    try {
+        cause = err.cause;
+    }
+    catch {
+        return described;
+    }
+    return cause instanceof Error ? { ...described, cause: describeOne(cause) } : described;
+}
+function describeOne(err) {
     const isError = err instanceof Error;
     let type = isError ? 'Error' : 'NonError';
     let message = '';

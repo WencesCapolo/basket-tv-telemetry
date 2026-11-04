@@ -1,3 +1,4 @@
+import { type ErrorDescription } from './scrub.js';
 type Scalar = string | number | boolean | null;
 /** One domain thing the unit touched: ids, counts, enums, booleans. Never emails, names, free text or amounts. */
 export type Fields = Record<string, Scalar | undefined>;
@@ -14,13 +15,10 @@ export interface WideEvent {
     reason?: string;
     user_id?: string;
     role?: string;
-    error?: {
-        type: string;
-        message: string;
-    };
+    error?: ErrorDescription;
     sample_rate?: number;
     repeats?: number;
-    [key: string]: Scalar | Fields | undefined;
+    [key: string]: Scalar | Fields | ErrorDescription | undefined;
 }
 /** Write the event as one line on stdout. Undefined and null keys drop out; over 8 KB only the core fields stay. Never throws. */
 export declare function emit(event: WideEvent): void;
@@ -34,7 +32,7 @@ export declare const currentEvent: () => WideEvent | undefined;
 /** Add fields to the current event (a no-op outside one). */
 export declare function addFields(fields: Partial<WideEvent>): void;
 export declare const currentRequestId: () => string | undefined;
-/** Mark the event as failed with the error's type and scrubbed message (no stack), and tag the error with the event. */
+/** Mark the event as failed with the error's type, scrubbed message and cause (no stack), and tag the error with the event. */
 export declare function markError(err: unknown, event?: WideEvent | undefined): void;
 /** The event `markError` tagged the error with: Next's `onRequestError` runs outside it. */
 export declare const eventOf: (err: unknown) => WideEvent | undefined;

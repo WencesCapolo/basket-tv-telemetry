@@ -42,11 +42,30 @@ export function scrubStack(err: Error): string | null {
 
 const errorType = (err: Error): string => (err.name || 'Error').slice(0, MAX_TYPE);
 
+export interface ErrorDescription {
+  type: string;
+  message: string;
+  /** An Error's Error `cause`, one level only: a failed query's message is mostly SQL, its cause says why. */
+  cause?: { type: string; message: string };
+}
+
 /**
- * `{ type, message }` of anything thrown. A non-Error is `NonError` with its string form as the message.
+ * `{ type, message, cause? }` of anything thrown. A non-Error is `NonError` with its string form as the message.
  * Never throws: it runs in the wrappers' catch, where a throw would replace the original error.
  */
-export function describeError(err: unknown): { type: string; message: string } {
+export function describeError(err: unknown): ErrorDescription {
+  const described = describeOne(err);
+  if (!(err instanceof Error)) return described;
+  let cause: unknown;
+  try {
+    cause = err.cause;
+  } catch {
+    return described;
+  }
+  return cause instanceof Error ? { ...described, cause: describeOne(cause) } : described;
+}
+
+function describeOne(err: unknown): { type: string; message: string } {
   const isError = err instanceof Error;
   let type = isError ? 'Error' : 'NonError';
   let message = '';
