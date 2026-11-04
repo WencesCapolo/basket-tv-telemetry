@@ -38,6 +38,12 @@
       ]
     }
   },
+  "imports": {
+    "#next-navigation": {
+      "react-server": "next/navigation",
+      "default": "next/navigation.js"
+    }
+  },
   "files": [
     "dist",
     "fixtures"

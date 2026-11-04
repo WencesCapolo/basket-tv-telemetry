@@ -1,4 +1,4 @@
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation.js';
 import { describe, expect, it } from 'vitest';
 import { addFields, requestIdOf } from '../src/log.js';
 import { withActionLog, withRequestLog } from '../src/next.js';
