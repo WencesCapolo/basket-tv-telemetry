@@ -1,6 +1,6 @@
 {
   "name": "basket-tv-telemetry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Shared server telemetry for the Basket.tv apps: error reporter, scrubbing and one JSON wide event per request.",
   "type": "module",
@@ -36,12 +36,6 @@
       "next": [
         "dist/next.d.ts"
       ]
-    }
-  },
-  "imports": {
-    "#next-navigation": {
-      "react-server": "next/navigation",
-      "default": "next/navigation.js"
     }
   },
   "files": [
