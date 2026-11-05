@@ -1,8 +1,9 @@
 // Wide events: one JSON line per unit of work (a request, an action, a job, a
 // worker message), built while it runs and written once at the end. The line
 // format is a contract the logs collector parses; fixtures/line-cases.json pins it.
+// node:async_hooks is also in the edge runtime; node:crypto is not, and a stray
+// import of this module from edge code must still load (globalThis.crypto instead).
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { randomUUID } from 'node:crypto';
 import { describeError } from './scrub.js';
 const MAX_BYTES = 8 * 1024;
 const CORE = ['ts', 'level', 'kind', 'request_id', 'method', 'route', 'status', 'duration_ms',
@@ -26,10 +27,10 @@ export function emit(event) {
     }
 }
 /** The incoming X-Request-Id when it is safe to reuse, else a new one. */
-export const requestId = (incoming) => incoming && REQUEST_ID.test(incoming) ? incoming : randomUUID();
+export const requestId = (incoming) => incoming && REQUEST_ID.test(incoming) ? incoming : globalThis.crypto.randomUUID();
 /** A new event. The `undefined` keys only fix the order of the line; `emit` drops the ones never set. */
 export const startEvent = (kind, fields = {}) => ({
-    ts: new Date().toISOString(), level: 'info', kind, request_id: randomUUID(),
+    ts: new Date().toISOString(), level: 'info', kind, request_id: globalThis.crypto.randomUUID(),
     method: undefined, route: undefined, status: undefined, duration_ms: undefined, outcome: undefined,
     ...fields,
 });
@@ -43,7 +44,7 @@ export function addFields(fields) {
         Object.assign(event, fields);
 }
 export const currentRequestId = () => als.getStore()?.request_id;
-/** Mark the event as failed with the error's type and scrubbed message (no stack), and tag the error with the event. */
+/** Mark the event as failed with the error's type, scrubbed message and cause (no stack), and tag the error with the event. */
 export function markError(err, event = als.getStore()) {
     if (!event)
         return;

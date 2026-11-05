@@ -135,13 +135,13 @@ export function createReporter(options: ReporterOptions): Reporter {
       enqueue(() => {
         const event = eventOf(err) ?? currentEvent();
         const { userId, ...rest } = context;
-        const { type, message } = describeError(err);
+        const { type, message, cause } = describeError(err);
         return {
           errors: {
             ts: Date.now(),
             source,
             type,
-            message,
+            message: cause ? `${message}\ncaused by ${cause.type}: ${cause.message}` : message,
             stack: err instanceof Error ? scrubStack(err) : null,
             userId: (userId ?? event?.user_id ?? null)?.slice(0, 200) ?? null,
             context: {
