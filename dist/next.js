@@ -1,12 +1,11 @@
 // Next has no middleware that sees the final status, so the event is built in
 // wrappers around route handlers and server actions. Page renders get no line;
 // their errors still reach `onRequestError`. Node runtime only.
-// next has no exports map, so plain Node ESM (an app's vitest) only resolves
-// the `.js` paths. Turbopack cannot build `next/navigation.js`, so package.json
-// `imports` maps #next-navigation to the bare name under `react-server`, the
-// condition Next bundles route handlers and actions with.
+// Turbopack cannot build `next/navigation.js`, nor resolve a package.json
+// `imports` alias before Next 16.3, so navigation stays bare: an app's vitest
+// must inline this package.
 import { headers } from 'next/headers.js';
-import { unstable_rethrow } from '#next-navigation';
+import { unstable_rethrow } from 'next/navigation';
 import { finish, markError, requestId, startEvent, withEvent } from './log.js';
 /** redirect(), notFound() and the like throw on purpose: they are not errors. */
 function isNextControlFlow(err) {

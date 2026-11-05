@@ -3,7 +3,7 @@
 Shared server telemetry for the Basket.tv apps: the error and event reporter for basket-telemetry's ingest, message scrubbing, and one JSON wide event per request for Hono and Next. TypeScript, ESM, Node runtime only (not Edge), no runtime dependencies.
 
 ```json
-"basket-tv-telemetry": "git+https://github.com/WencesCapolo/basket-tv-telemetry#v0.1.1"
+"basket-tv-telemetry": "git+https://github.com/WencesCapolo/basket-tv-telemetry#v0.1.2"
 ```
 
 `dist/` is committed: installing from git builds nothing. `hono` (≥ 4.8) and `next` (≥ 15) are optional peers; install only the one your app uses.
@@ -128,6 +128,6 @@ A port (the Python reporter) must pass `fixtures/scrub-cases.json` (input → ex
 
 Bump the tag in each app's `package.json` and reinstall.
 
-**Upgrading to 0.1.1.** Apps can remove `test.server.deps.inline: ['basket-tv-telemetry']` from their vitest config: the package now loads in plain Node ESM. Move `instrumentation.ts` to the pattern in the Next section.
+**Upgrading to 0.1.2.** Move `instrumentation.ts` to the pattern in the Next section. Keep `test.server.deps.inline: ['basket-tv-telemetry']` in the app's vitest config: `basket-tv-telemetry/next` imports `next/navigation` without an extension, which only a bundler resolves. 0.1.1 aliased it through package.json `imports`, which Turbopack before Next 16.3 cannot resolve, so skip 0.1.1.
 
 Changes land here with `pnpm build` and the rebuilt `dist/` in the same commit; CI fails if they differ.
